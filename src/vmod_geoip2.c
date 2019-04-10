@@ -37,6 +37,8 @@
 
 #include "vcc_if.h"
 
+#include "ws_ext.h"
+
 struct vmod_geoip2_geoip2 {
 	unsigned		magic;
 #define VMOD_GEOIP2_MAGIC	 	0x19800829
@@ -109,10 +111,11 @@ printf_bytes(struct ws *ws, const uint8_t *bytes, uint32_t size,
 {
 	char *p;
 	uint32_t i;
+	size_t sz = size * 2 + json * 2;
 
-	p = WS_Alloc(ws, size * 2 + json * 2 + 1);
-	if (p == NULL)
-		return (p);
+	if (WS_Space(ws) < sz)
+		return (NULL);
+	p = WS_Tail(ws);
 	for (i = 0; i < size; i++)
 		sprintf(&p[i * 2 + json], "%02X", bytes[i]);
 	if (json) {
@@ -120,6 +123,7 @@ printf_bytes(struct ws *ws, const uint8_t *bytes, uint32_t size,
 		p[size * 2 + 1] = '"';
 		p[size * 2 + 2] = '\0';
 	}
+	WS_Advance(ws, sz);
 	return (p);
 }
 
@@ -133,7 +137,7 @@ geoip2_format(VRT_CTX, const MMDB_entry_data_s *data, VCL_BOOL json)
 	AN(data);
 	switch (data->type) {
 	case MMDB_DATA_TYPE_BOOLEAN:
-		p = WS_Printf(ctx->ws, "%s", data->boolean ?
+		p = WS_Append_Printf(ctx->ws, "%s", data->boolean ?
 		    "true" : "false");
 		break;
 
@@ -143,32 +147,32 @@ geoip2_format(VRT_CTX, const MMDB_entry_data_s *data, VCL_BOOL json)
 		break;
 
 	case MMDB_DATA_TYPE_DOUBLE:
-		p = WS_Printf(ctx->ws, "%f", data->double_value);
+		p = WS_Append_Printf(ctx->ws, "%f", data->double_value);
 		break;
 
 	case MMDB_DATA_TYPE_FLOAT:
-		p = WS_Printf(ctx->ws, "%f", data->float_value);
+		p = WS_Append_Printf(ctx->ws, "%f", data->float_value);
 		break;
 
 	case MMDB_DATA_TYPE_INT32:
-		p = WS_Printf(ctx->ws, "%i", data->int32);
+		p = WS_Append_Printf(ctx->ws, "%i", data->int32);
 		break;
 
 	case MMDB_DATA_TYPE_UINT16:
-		p = WS_Printf(ctx->ws, "%u", data->uint16);
+		p = WS_Append_Printf(ctx->ws, "%u", data->uint16);
 		break;
 
 	case MMDB_DATA_TYPE_UINT32:
-		p = WS_Printf(ctx->ws, "%u", data->uint32);
+		p = WS_Append_Printf(ctx->ws, "%u", data->uint32);
 		break;
 
 	case MMDB_DATA_TYPE_UINT64:
-		p = WS_Printf(ctx->ws, "%ju", (uintmax_t)data->uint64);
+		p = WS_Append_Printf(ctx->ws, "%ju", (uintmax_t)data->uint64);
 		break;
 
 	case MMDB_DATA_TYPE_UTF8_STRING:
 		fmt = json ? "\"%.*s\"" : "%.*s";
-		p = WS_Printf(ctx->ws, fmt, data->data_size,
+		p = WS_Append_Printf(ctx->ws, fmt, data->data_size,
 		    data->utf8_string);
 		break;
 
@@ -248,14 +252,18 @@ vmod_geoip2_lookup(VRT_CTX, struct vmod_geoip2_geoip2 *vp,
 		return (NULL);
 	}
 
+	p = NULL;
+	if (WS_Open(ctx->ws)) {
+		errno = 0;
+		p = geoip2_format(ctx, &data, json);
+		WS_Close(ctx->ws);
 
-	errno = 0;
-	p = geoip2_format(ctx, &data, json);
-	if (p == NULL && errno == EINVAL) {
-		vslv(ctx, SLT_Error,
-		    "geoip2.lookup: Unsupported data type (%d)",
-		    data.type);
-		return (NULL);
+		if (p == NULL && errno == EINVAL) {
+			vslv(ctx, SLT_Error,
+			    "geoip2.lookup: Unsupported data type (%d)",
+			    data.type);
+			return (NULL);
+		}
 	}
 
 	if (!p)
