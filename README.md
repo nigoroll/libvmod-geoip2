@@ -1,14 +1,13 @@
-libvmod-geoip2
-==============
-
-![ci](https://github.com/varnishcache-friends/libvmod-geoip2/workflows/ci-devel/badge.svg)
-[![codecov](https://codecov.io/gh/varnishcache-friends/libvmod-geoip2/branch/devel/graph/badge.svg?token=4xGDQ6c35o)](https://codecov.io/gh/varnishcache-friends/libvmod-geoip2)
+libvmod-geoip2 with lookup_fields() extension
+=============================================
 
 ## About
 
 A Vinyl main VMOD to query MaxMind GeoIP2 DB files.
 
-For other versions refer to the main branch.
+This branch is based upon
+https://github.com/varnishcache-friends/libvmod-geoip2/tree/devel and adds the
+`lookup_fields()` function to look up more than one IP in a string.
 
 ## Requirements
 
