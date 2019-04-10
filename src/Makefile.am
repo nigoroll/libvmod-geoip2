@@ -5,7 +5,10 @@ vmod_LTLIBRARIES = libvmod_geoip2.la
 libvmod_geoip2_la_LDFLAGS = $(VMOD_LDFLAGS) $(MAXMINDDB_LIBS)
 
 libvmod_geoip2_la_SOURCES = \
-	vmod_geoip2.c
+	vmod_geoip2.c \
+	ws_ext.h \
+	ws_ext.c
+
 nodist_libvmod_geoip2_la_SOURCES = \
 	vcc_geoip2_if.c \
 	vcc_geoip2_if.h
