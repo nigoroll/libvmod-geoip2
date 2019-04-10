@@ -272,3 +272,157 @@ vmod_geoip2_lookup(VRT_CTX, struct vmod_geoip2_geoip2 *vp,
 
 	return (p);
 }
+
+#define geoip2_lf_err(ctx, w, what, err, errv) do {			\
+		vslv((ctx), SLT_Error,				\
+		    "geoip2.lookup_fields(%s) %s: %s(%d)",		\
+		    (w), (what), (err), (errv));			\
+		w = WS_Append(ctx->ws, "?", 1); 			\
+	} while (0)
+
+#define geoip2_lf_dbg(ctx, w, what, err, errv) do {		\
+		vslv((ctx), SLT_Debug,				\
+		    "geoip2.lookup_fields(%s) %s: %s(%d)",		\
+		    (w), (what), (err), (errv));			\
+		w = WS_Append(ctx->ws, "?", 1); 			\
+	} while (0)
+
+VCL_STRING v_matchproto_(td_geoip2_geoip2_lookup_fields)
+vmod_geoip2_lookup_fields(VRT_CTX, struct vmod_geoip2_geoip2 *vp,
+    VCL_STRING path, VCL_STRING list, VCL_STRING sep)
+{
+	MMDB_lookup_result_s res;
+	MMDB_entry_data_s data;
+	const char **ap, *arrpath[COMPONENT_MAX];
+	char buf[LOOKUP_PATH_MAX];
+	char *p, *last, *w;
+	const char *out, *s, *e;
+	int mmdb_error, gai_error;
+
+	CHECK_OBJ_NOTNULL(ctx, VRT_CTX_MAGIC);
+
+	if (!vp) {
+		vslv(ctx, SLT_Error,
+		    "geoip2.lookup_fields: Database not open");
+		return (NULL);
+	}
+
+	if (!path || !*path || strlen(path) >= sizeof(buf)) {
+		vslv(ctx, SLT_Error,
+		    "geoip2.lookup_fields: Invalid or missing path (%s)",
+		    path ? path : "NULL");
+		return (NULL);
+	}
+
+	if (list == NULL)
+		return NULL;
+
+	if (sep == NULL)
+		sep = ",";
+
+	strncpy(buf, path, sizeof(buf));
+
+	last = NULL;
+	for (last = NULL, p = buf, ap = arrpath;
+	     ap < &arrpath[COMPONENT_MAX - 1] &&
+		 (*ap = strtok_r(p, "/", &last)) != NULL;
+	     p = NULL) {
+		if (**ap != '\0')
+			ap++;
+	}
+	*ap = NULL;
+
+	out = w = WS_Open(ctx->ws);
+
+	/*
+	 * we copy everything until the next separator onto our open workspace
+	 * and use the copied address for the lookup
+	 */
+	while (w && *list) {
+		/* append separators */
+		s = list;
+		list += strspn(list, sep);
+		if (s != list) {
+			assert (list > s);
+			w = WS_Append(ctx->ws, s, list - s);
+			if (w == NULL)
+				break;
+			s = list;
+		}
+
+		list += strcspn(list, sep);
+		e = list;
+		if (s == e)
+			break;
+
+		while (e > s && (e[-1] == ' ' || e[-1] == '\t'))
+			e--;
+
+		if (s == e) {
+			/* only whitespace, preserve */
+			w = WS_Append(ctx->ws, s, list - s);
+			continue;
+		}
+
+		w = WS_Append(ctx->ws, s, e - s);
+		if (w == NULL)
+			break;
+
+		while (*w == ' ' || *w == '\t')
+			w++;
+
+		/* all-whitespace case handled above */
+		assert(w < WS_Tail(ctx->ws));
+
+		res = MMDB_lookup_string(&vp->mmdb, w,
+		    &gai_error, &mmdb_error);
+
+		/* move ws tail back to start of ip address */
+		WS_Restore(ctx->ws, w);
+
+		if (gai_error != 0) {
+			geoip2_lf_err(ctx, w, "getaddrinfo",
+			    gai_strerror(gai_error), gai_error);
+		} else if (mmdb_error != MMDB_SUCCESS) {
+			geoip2_lf_err(ctx, w, "mmdb",
+			    MMDB_strerror(mmdb_error), mmdb_error);
+		} else if (!res.found_entry) {
+			w = WS_Append(ctx->ws, "?", 1);
+		} else {
+			mmdb_error =
+			    MMDB_aget_value(&res.entry, &data, arrpath);
+			if (mmdb_error != MMDB_SUCCESS &&
+			    mmdb_error != MMDB_LOOKUP_PATH_DOES_NOT_MATCH_DATA_ERROR) {
+				geoip2_lf_err(ctx, w, "mmdb_aget",
+				    MMDB_strerror(mmdb_error), mmdb_error);
+			} else if (!data.has_data) {
+				geoip2_lf_dbg(ctx, w, "no data",
+				    path, 0);
+			} else {
+				errno = 0;
+				last = w;
+				w = geoip2_format(ctx, &data, 0);
+				if (w == NULL && errno == EINVAL) {
+					geoip2_lf_err(ctx, last, "format",
+					    "unsupported data type", data.type);
+					w = last;
+				}
+			}
+		}
+
+		/* append remaining whitespace */
+		if (w && e != list) {
+			assert (list > e);
+			w = WS_Append(ctx->ws, e, list - e);
+		}
+	}
+
+	if (out)
+		WS_Close(ctx->ws);
+
+	if (w == NULL)
+		vslv(ctx, SLT_Error,
+		    "geoip2.lookup_fields: Out of workspace");
+
+	return (out);
+}

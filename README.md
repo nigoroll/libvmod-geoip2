@@ -1,14 +1,14 @@
-libvmod-geoip2
-==============
-
-[![Build Status](https://travis-ci.org/fgsch/libvmod-geoip2.svg?branch=devel)](https://travis-ci.org/fgsch/libvmod-geoip2)
+libvmod-geoip2 with lookup_fields() extension
+=============================================
 
 ## About
 
 A Varnish master VMOD to query MaxMind GeoIP2 DB files.
 
-For Varnish 4.1/6.0 and 6.1 refer to the oldstable and master
-branches, respectively.
+This branch is based upon
+https://github.com/fgsch/libvmod-geoip2/tree/devel for varnish-cache
+master and adds the `lookup_fields()` function to look up more than
+one IP in a string.
 
 ## Requirements
 
