@@ -1,14 +1,14 @@
 libvmod-geoip2
 ==============
 
-![ci](https://github.com/varnishcache-friends/libvmod-geoip2/workflows/ci-main/badge.svg)
-[![codecov](https://codecov.io/gh/varnishcache-friends/libvmod-geoip2/branch/devel/graph/badge.svg)](https://codecov.io/gh/varnishcache-friends/libvmod-geoip2)
+![ci](https://github.com/vinylcache-friends/libvmod-geoip2/workflows/ci-main/badge.svg)
+[![codecov](https://codecov.io/gh/vinylcache-friends/libvmod-geoip2/branch/devel/graph/badge.svg)](https://codecov.io/gh/vinylcache-friends/libvmod-geoip2)
 
 ## About
 
-A Varnish 6.0, 7.4 and 7.5 VMOD to query MaxMind GeoIP2 DB files.
+A Vinyl Cache 6.0, 7.4 and 7.5 VMOD to query MaxMind GeoIP2 DB files.
 
-For Varnish master refer to the devel branch.  Older Varnish versions
+For Vinyl Cache master refer to the devel branch.  Older Vinyl Cache versions
 are no longer supported.
 
 ## Requirements
@@ -19,8 +19,8 @@ To build this VMOD you will need:
 * a C compiler, e.g. GCC or clang
 * pkg-config
 * python3-docutils or docutils in macOS [1]
-* varnish-dev in Debian/Ubuntu, varnish-devel in CentOS/RedHat or
-  varnish in macOS [1]
+* vinyl-dev in Debian/Ubuntu, vinyl-devel in CentOS/RedHat or
+  vinyl in macOS [1]
 * libmaxminddb-dev in recent Debian/Ubuntu releases, maxminddb in
   macOS [1]. See also https://github.com/maxmind/libmaxminddb
 
@@ -31,7 +31,7 @@ If you are building from Git, you will also need:
 * libtool
 
 You will also need to set `PKG_CONFIG_PATH` to the directory where
-**varnishapi.pc** is located before running `autogen.sh` and
+**vinylapi.pc** is located before running `autogen.sh` and
 `configure`.  For example:
 
 ```
@@ -62,7 +62,7 @@ tests are passing on your platform.
 To install from Git, clone this repository by running:
 
 ```
-git clone --branch main --recursive https://github.com/varnishcache-friends/libvmod-geoip2
+git clone --branch main --recursive https://github.com/vinylcache-friends/libvmod-geoip2
 ```
 
 And then run `./autogen.sh` followed by the instructions above for
@@ -70,7 +70,7 @@ installing from a tarball.
 
 ### Packages
 
-See https://github.com/varnishcache-friends/libvmod-geoip2/wiki#packages.
+See https://github.com/vinylcache-friends/libvmod-geoip2/wiki#packages.
 
 ## Example
 
@@ -88,7 +88,7 @@ sub vcl_recv {
 }
 ```
 
-More examples available at https://github.com/varnishcache-friends/libvmod-geoip2/wiki.
+More examples available at https://github.com/vinylcache-friends/libvmod-geoip2/wiki.
 
 ## DB updates
 

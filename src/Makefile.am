@@ -1,5 +1,5 @@
 
-TESTS_ENVIRONMENT = PATH=$(VARNISH_BINDIR):$(VARNISH_SBINDIR):$$PATH
+TESTS_ENVIRONMENT = PATH=$(VINYL_BINDIR):$(VINYL_SBINDIR):$$PATH
 
 vmoddir = $(VMOD_DIR)
 vmod_LTLIBRARIES = libvmod_geoip2.la
@@ -16,7 +16,7 @@ nodist_libvmod_geoip2_la_SOURCES = \
 
 dist_man_MANS = vmod_geoip2.3
 
-VTC_LOG_COMPILER = $(VARNISHTEST) -v \
+VTC_LOG_COMPILER = $(VINYLTEST) -v \
 	-Dvmod_topbuild=$(abs_top_builddir) -Dvmod_topsrc=$(abs_top_srcdir)
 TEST_EXTENSIONS = .vtc
 TESTS = @VMOD_TESTS@
